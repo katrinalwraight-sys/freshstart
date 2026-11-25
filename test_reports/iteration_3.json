@@ -1,0 +1,47 @@
+{
+  "summary": "Retest of iteration-2 fixes. Backend: 9/9 pytest pass (tests/test_iter3_fixes.py), run on a new TEST_it3 user. FIX 1: POST /shopping/share/revoke returns 200, after which the old token gives 404, and the UI share-revoke-button closes the sheet with no page errors. FIX 2: background pricing filled Walmart and No Frills prices for every new item (manual add, craving with a date, manual meal, to-shopping) within about 30s. It also backfilled the old unpriced items on the TEST_ui account once a to-shopping call triggered it. FIX 3: 'Fresh Garlic' went from '4 cloves + 5 cloves' to '9 cloves (buy 3-bulb pack)'; 'Garlic powder' and 'Extra firm tofu' were also combined cleanly. FIX 4: the 'creamy chicken curry' craving returned '20-Minute Creamy Coconut Chicken Curry'. FIX 5: the List button shows 'Already covered — everything is in your pantry or on your list.' on the second tap; the nutrition estimate returns floats; the plan sheet shows 'Starts Wed Nov 25 2026' in full. Regression: the Plan day view has 4 sections with Add buttons, and Accept/Decline are 40x40 with hitSlop 4. 'I ate this' says 'Added 315 kcal', then 'Updated' on the second tap, with no duplicate log. The shopping detail sheet shows the 3-store price comparison. No deprecated Expo packages found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/shopping", "issue": "Pricing only runs after an add event. Items added before the fix stay unpriced (the TEST_ui list showed $0 for 10 of 14 items until a to-shopping call ran). Store totals and budget are understated until then."},
+      {"endpoint": "POST /api/recipes/{id}/eat", "issue": "The log is saved to the recipe's planned date (r.date, for example a future Fri Nov 27). The UI copy says 'Adds only your portion to today's nutrition', so the copy and the behaviour disagree. Future meals can also be logged as eaten."},
+      {"endpoint": "POST /api/recipes/{id}/to-shopping", "issue": "Duplicate check only looks at the matched item's needed_for. Banana Oat Pancakes already had 'Large Flake Oats' (from plan generation); tapping List merged the recipe's oats into 'Rolled Oats' too and reported 'Added 1 item(s)'. The same recipe now needs oats twice."},
+      {"endpoint": "POST /api/shopping", "issue": "Manual add never merges. Adding 'Honey' when 'Honey' is already on the list creates a second row."},
+      {"endpoint": "POST /api/meals/manual (ai_fill=false)", "issue": "Ingredient strings are not parsed: '300 g chicken breast' becomes a shopping item with that full name and an empty quantity, so it can't merge with 'Chicken breast'."},
+      {"endpoint": "recipe_to_shop staple filter", "issue": "The regex skips 'salt and pepper' but not 'Salt and Black Pepper', so that item was added to the shopping list."},
+      {"endpoint": "price_items", "issue": "todo includes every item with more than one needed_for on every pass, so all merged items are re-priced on every add. This wastes AI calls."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Share sheet", "issue": "The revoke onPress uses an empty catch {} and closes the sheet even if the request fails, so the user is never told that revoke failed.", "testID": "share-revoke-button", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Plan sheet", "issues": ["The 'Starts …' text sits about 16px above the bottom edge on a 375x667 viewport with no bottom safe-area padding. It may be clipped on devices with a home indicator."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_iter3_fixes.py", "/app/test_reports/pytest/pytest_iter3.xml"],
+  "action_items": [
+    "Call schedule_pricing from GET /shopping (or at startup) when any unchecked item is missing a store price, so old lists get backfilled.",
+    "Either log 'I ate this' to today, or change the copy to say the planned day; consider blocking eat for future dates.",
+    "In recipe_to_shop, skip an ingredient if any shopping item already lists this recipe_id in needed_for under a similar name (oats / large flake oats).",
+    "Make POST /shopping go through merge_shopping so manual adds merge with existing items.",
+    "Parse quantity from ingredient strings in the no-AI manual meal path.",
+    "Widen the staple regex (salt and black pepper, sea salt, etc.).",
+    "In price_items, only re-price multi-need items when needed_for has changed since the last pass (for example, track a priced_needs count).",
+    "Show an error state when share revoke fails."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 1606 lines; split it into modules (shopping, plans, nutrition, share).",
+    "The PRICING dict is in-memory per process. That is fine for 1 worker, but with multiple workers you get duplicate passes, and pending passes are lost on restart."
+  ],
+  "updated_files": ["/app/backend/tests/test_iter3_fixes.py"],
+  "success_rate": {"backend": "100% (9/9 targeted tests)", "frontend": "100% of retested flows (share/revoke, detail sheet, plan day view, plan sheet, recipe List/I ate this)"},
+  "seed_data_creation": "Created TEST_it3_* users (shopping items cleaned up; generated recipes remain). On TEST_ui_8ccc88: the List tap merged Banana Oat Pancakes into 'Rolled Oats'; the 'I ate this' log was created then deleted (points from it may remain); a 'Honey' duplicate was added then deleted; the triggered pricing pass priced and normalised that account's existing items.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run pytest with -n 0. Pricing finishes about 20-40s after an add. TEST_ui_8ccc88 now has a fully priced list with 3 stores (Walmart, No Frills, Costco). /calendar/range takes start and end. Plan Accept/Decline testIDs are '<card>-accept' / '<card>-decline'.",
+  "rca_of_issue": "Unpriced old items: schedule_pricing is only called from POST /shopping, recipe_to_shop and plan completion, never on read, so lists created before the fix stay unpriced until the next add."
+}

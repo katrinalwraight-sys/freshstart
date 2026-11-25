@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 2 (Fresh Start v2 connected system). Backend: 18/19 pytest tests pass (tests/test_freshstart_v2.py, isolated TEST_ user). Passing: async day plan in pantry_only mode (ready in about 30s); calendar/range days/meals/logs/totals and the 422 on a bad date; accept/decline/move/favorite/favorites; idempotent eat (same log_id, calories = per-serving x servings, a single log row); cook with partial pantry deductions (e.g. 'Eggs: 8 left', 'Cheddar cheese: 340 g block left', nothing wiped) and a 409 on a second cook; to-shopping and schedule copy; craving and ingredients generators plus the 422 when nothing is picked; manual meal (status manual, opens via GET /recipes/{id}); swap with feedback; no duplicate shopping names; item to-pantry and checked-to-pantry; share HTML, items and toggle; nutrition estimate (goldfish = '1 serving (30 g)', 30 g, 467 kcal/100g, unit_grams); rewards and the bad quest-claim error. FAILED: share revoke. DELETE /api/shopping/share returns 404 'Item not found' because DELETE /shopping/{item_id} is declared first and captures the request, so the link stays public. Frontend at 390x844 had no red screens. Working flows: demo login; home (logo, points pill -> rewards with 5 quests and 7 badges, next meal, 4 actions, macros); Plan Day/Week toggle, week strip prev/next, 4 sections with Add buttons; AI cards with accept/decline/move/swap (accepted cards drop accept/decline, manual cards show swap only); move sheet; AI plan sheet scope/mode, and a UI-driven day plan in pantry_plus mode (4 meals in about 24s plus a grocery summary); craving generator with 'Add context' -> recipe detail with have/buy and macros; favourite heart; eat stepper with 1.5 servings and 'Update what I ate' on re-tap (no duplicate); add to list; swap sheet; pantry 'Use in a meal' -> /cook-with?preselect with 1 selected -> recipe -> cook showing partial deductions; favourites add-to-day; manual entry; shopping store chips, running total, detail sheet (needed for, combined qty, missing/top-up, price comparison), bought->pantry, share sheet; food log estimate -> serving suggestion, 15 units, g/handful recalculation, saved. No deprecated Expo packages (no expo-av, expo-barcode-scanner or expo-background-fetch) and no SafeAreaView issues detected.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "DELETE /api/shopping/share", "issue": "Route shadowed by @api.delete('/shopping/{item_id}') (server.py:672), which is declared before revoke_share (server.py:1418). Returns 404 'Item not found', so the share link is never revoked (verified: /api/share/{token}/items still 200 after revoke). Fix: move the /shopping/share routes above /shopping/{item_id}, or rename the path.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "recipe_to_shop (server.py:934)", "issue": "Items added from craving, cook-with, swap, schedule, manual and to-shopping get no 'prices' or 'product', so the price comparison and per-store totals are empty for them. Demo: 32/37 items have no prices and 5 have Walmart only, with stores Walmart/No Frills/Costco. TEST user: 10/14 unpriced."},
+      {"endpoint": "merge_shopping", "issue": "Combined quantity double-counts. Demo 'Cheddar Cheese' = '500g + 115 g + 320g': 500g is already the plan's combined total, then per-meal amounts are appended. 'Bread' = '2 loaves + 1 loaf (675g)' while needed_for lists only 1 meal."},
+      {"endpoint": "POST /api/meals/generate kind=craving", "issue": "Output is pulled too hard toward the pantry: 'creamy chicken curry' -> 'Creamy Spinach Chicken Curry Pasta'; 'spicy tofu noodles' -> 'Spicy Tofu & Spinach Pasta'. The craving should take priority over the pantry context in the prompt."},
+      {"endpoint": "POST /api/nutrition/estimate", "issue": "float(res.get('serving_g')) and the other float() casts raise if the LLM returns a string like '30 g', giving a 502. Parse defensively."},
+      {"endpoint": "server.py", "issue": "1538 lines (over 700); split it into routers/modules."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Shopping share sheet 'Stop sharing'", "issue": "onPress has no try/catch. The backend 404 throws an uncaught 'Item not found' (pageerror) and the link stays active.", "testID": "share-revoke-button", "priority": "HIGH"},
+      {"component": "Recipe detail 'List' button", "issue": "Shows 'Nothing missing — you have it all.' when added=0 because the items were already on the list, even though the 'Need to buy' section has items. Misleading.", "testID": "recipe-to-shopping-button", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Shopping detail price comparison", "issue": "Most items show no per-store prices (see recipe_to_shop). Store chip totals don't reflect every item.", "affected_testIDs": ["shopping-detail-sheet", "store-chip-Walmart", "shopping-running-total"]}
+    ],
+    "design_issues": [
+      {"screen": "Home", "issues": ["The floating 'Scan Food' FAB covers the quest card text ('Cook 3 …') at the initial scroll position."]},
+      {"screen": "Plan AI sheet", "issues": ["The 'Starts Wed Nov 25 2026' date chip sits right against the bottom edge of the sheet and looks clipped at 390x844."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_freshstart_v2.py", "/app/test_reports/pytest/pytest_v2.xml"],
+  "action_items": [
+    "Fix route order: declare DELETE /shopping/share (and POST) before /shopping/{item_id}, and wrap the share-revoke onPress in try/catch with an error state.",
+    "Make recipe_to_shop/merge_shopping fill per-store prices (e.g. a batched AI price lookup for new items at the user's stores) so the price comparison and store totals cover every item.",
+    "Fix combined-quantity double counting when merging per-meal quantities into a plan item whose quantity is already a combined total.",
+    "Make the craving generator prompt put the craving first (use the pantry as optional), so 'noodles' doesn't become pasta.",
+    "Show 'Already on your list' rather than 'Nothing missing' when to-shopping adds 0 because the items were merged.",
+    "Defensive numeric parsing in estimate_food; split server.py into modules."
+  ],
+  "critical_code_review_comments": [
+    "server.py:672 vs 1418: route shadowing breaks share revoke.",
+    "recipe_to_shop builds items with no prices/product, so the price feature works only for plan-generated items.",
+    "estimate_food float() casts on LLM output can raise.",
+    "Home FAB overlaps content at rest; the list has bottom padding, so it's fine after scrolling."
+  ],
+  "updated_files": ["/app/backend/tests/test_freshstart_v2.py"],
+  "success_rate": {"backend": "95% (18/19)", "frontend": "~95% (all requested flows work except share revoke)"},
+  "seed_data_creation": "Created isolated users TEST_v2_<rand>@example.com (pytest), TEST_p_<rand>@example.com (one curl day plan) and TEST_ui_8ccc88@example.com / test1234 (UI tests: pantry, craving meals, manual meals, logs, day plan for 2026-11-27). Demo account: only read flows plus a share link created via the share sheet (revoke couldn't be done because of the bug). There is no delete-account endpoint, so the TEST users remain.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Container clock is 2026-11-25. Run pytest with '-n 0' (pytest.ini adds xdist). /plans/current returns {plan, latest_ready}. Sheets use Modal animationType=slide, so wait ~1.5s before interacting. The calendar switch is hidden on web (expected). TEST_ui_8ccc88@example.com / test1234 has rich data for UI checks."
+}

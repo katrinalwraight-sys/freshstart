@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Fresh Start",
+    "slug": "frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "frontend",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.emergent.kitchenscan.knpah0",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scan your fridge to plan meals from it",
+        "NSPhotoLibraryUsageDescription": "Pick food photos to add to your pantry",
+        "NSCalendarsUsageDescription": "Fit meals around your busy schedule",
+        "NSCalendarsFullAccessUsageDescription": "Fit meals around your busy schedule"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FFFCF9"
+      },
+      "package": "com.emergent.kitchenscan.knpah0",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_CALENDAR"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-image.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFCF9"
+        }
+      ],
+      "expo-font",
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-status-bar",
+      "@react-native-vector-icons/ionicons",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Scan your fridge to plan meals from it",
+          "photosPermission": "Pick food photos to add to your pantry"
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Fit meals around your busy schedule"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

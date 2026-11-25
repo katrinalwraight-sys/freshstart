@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 1 tested the full backend and frontend. Backend: 15/15 pytest tests pass. These cover auth (register, 409 duplicate, login, wrong password 401, /me 401 without token), profile GET/PUT (household size clamped to 20), pantry CRUD, bulk add and user isolation, the AI pantry scan (20 items with expiry dates from a real image), the AI leftover scan (3 recipes, GET /recipes/{id}, isolated per user), async plan generation (generating -> ready in ~30s, 7 days, no repeated titles, no peanuts or meat for a Peanuts-allergy vegetarian profile, shopping list created) and shopping CRUD with clear-checked. Frontend at 390x844: every requested flow works with no red screens. That covers sign-up -> onboarding -> tabs, demo login with the hero, expiring shelf and scan FAB, the Pantry sheet (add, validation, search, chips, delete), the Plan day strip and recipe detail, Shopping (add, check, progress, clear checked), the Scan mode toggle and web file-picker upload for pantry and leftovers, and the profile allergy and family-mode edits, logout included. No deprecated Expo packages found (expo-image-picker is used and there is no expo-av or expo-camera). No SafeAreaView issues detected; react-native-safe-area-context insets are used.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/plans/generate (run_plan_generation)", "issue": "Calls db.shopping_items.delete_many({user_id}). This wipes ALL shopping items, including ones the user added by hand, which contradicts the code comment 'replace unchecked generated list'. Verified: TEST_Manual_Item was gone after generation."},
+      {"endpoint": "POST /api/plans/generate, /api/scan/*", "issue": "No retry or backoff on an LLM 429 'concurrent_request_limit' error. When a plan generation ran at the same time as a scan, the plan went straight to status=failed (seen in backend.err.log). A user who scans while their plan is generating will get a failed plan."},
+      {"endpoint": "POST /api/plans/generate", "issue": "The result of asyncio.create_task(...) is not stored, so the task can be garbage-collected mid-run. Keep references in a set."},
+      {"endpoint": "DELETE /api/shopping/{id}", "issue": "Returns 200 {ok:true} for items that don't exist or belong to another user. DELETE /pantry/{id} returns 404 in the same case, so the two are inconsistent."},
+      {"endpoint": "run_plan_generation / scan_pantry", "issue": "Uses the server's date.today() (UTC) for plan days and expiry. Users in other timezones can get the wrong 'today' near midnight."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Pantry list row ExpiryTag", "issue": "testID collision: the row used pantry-expiry-${item.id}, the same prefix as the add sheet's expiry presets pantry-expiry-${days}. FIXED by renaming the row testID to pantry-row-expiry-${item.id}.", "testID": "pantry-row-expiry-*", "priority": "low"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Scan review footer", "issues": ["The 'Add 19 to pantry' button label wraps onto two lines at 390px width (cramped next to Retake). Use a shorter label or let the button flex wider."]},
+      {"screen": "Pantry", "issues": ["Delete buttons are 36x36 and category chips are 36px tall, below the 44pt minimum touch target.", "Delete removes the item immediately, with no confirmation or undo."]},
+      {"screen": "Shopping", "issues": ["Progress briefly shows '0/0 · ~$0.00 left' before the list loads. Hide it or show a skeleton while loading."]},
+      {"screen": "Global", "issues": ["The console logs 401 errors on app start and after logout because queries fire without a token. Gate queries on auth state."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_fridgechef_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Plan generation: only delete unchecked, plan-generated shopping items (add a source field), and keep items the user added by hand.",
+    "Add retry with backoff (2-3 attempts) in ask_gemini for 429/concurrency errors, or serialise LLM calls with an asyncio.Semaphore(1).",
+    "Store references to background plan tasks so they aren't garbage-collected.",
+    "Make DELETE /api/shopping/{id} return 404 when nothing was deleted.",
+    "Raise the Pantry delete button and chip touch targets to at least 44px, and add a confirmation or undo for delete.",
+    "Fix the scan review footer button label wrapping.",
+    "server.py is 723 lines; consider splitting it into routers (auth, pantry, scans, plans, shopping)."
+  ],
+  "critical_code_review_comments": [
+    "The shopping list wipe on regeneration loses user data (manual items).",
+    "LLM calls have no concurrency control or retry, and the Emergent key's concurrency limit triggers 429s.",
+    "The fire-and-forget asyncio.create_task has no stored reference.",
+    "Auth, isolation, _id exclusion and env usage all look correct. bcrypt hashing is right and the email index is unique."
+  ],
+  "updated_files": ["/app/frontend/app/(tabs)/pantry.tsx (testID rename only)", "/app/backend/tests/test_fridgechef_api.py (new)"],
+  "success_rate": {"backend": "100% (15/15; first run hit an LLM 429 from parallel xdist calls, passed when run serially)", "frontend": "100% of requested flows"},
+  "seed_data_creation": "None persisted. TEST_ users created by pytest and the UI run were deleted by id along with their data. A TEST_Yogurt pantry item and a TEST_Bananas shopping item were added to the demo account and then removed. The demo plan was not regenerated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run the pytest suite with -n 0 (serial); xdist parallelism causes LLM 429 concurrency errors. The test image /tmp/fridge.jpg comes from the unsplash URL in image_testing.md. Plan generation takes ~30s. The UI file picker works through page.expect_file_chooser on scan-pick-library-button. Auth mode testIDs are auth-mode-register and auth-mode-login. The Home action testIDs are home-scan-fridge-button and home-scan-leftovers-button. The Pantry sheet slides in, so wait ~1.5s before clicking inside it.",
+  "rca_of_issue": "The plan failure in the first pytest run happened because the parallel scan-leftovers call and the plan generation together exceeded the Emergent LLM concurrency limit (429 CONCURRENCY_REQUEST_LIMIT). The code has no retry, so the plan was marked failed."
+}

@@ -1,0 +1,166 @@
+{
+  "app_name": "FridgeChef",
+  "personality": "4 Tactile / Playful LIGHT",
+  "personality_one_liner": "An energetic, warm, and approachable kitchen companion that makes meal planning for busy households feel effortless and fun.",
+  "color": {
+    "surface": "#FFFCF9",
+    "onSurface": "#2D2426",
+    "surfaceSecondary": "#FFF4F7",
+    "onSurfaceSecondary": "#2D2426",
+    "surfaceTertiary": "#FFF8E7",
+    "onSurfaceTertiary": "#2D2426",
+    "surfaceInverse": "#2D2426",
+    "onSurfaceInverse": "#FFFFFF",
+    "brand": "#FF4D79",
+    "brandPrimary": "#FF4D79",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#FFC857",
+    "onBrandSecondary": "#2D2426",
+    "brandTertiary": "#FFE5EC",
+    "onBrandTertiary": "#D81E5B",
+    "success": "#10B981",
+    "onSuccess": "#FFFFFF",
+    "warning": "#FFC857",
+    "onWarning": "#2D2426",
+    "error": "#EF476F",
+    "onError": "#FFFFFF",
+    "info": "#FFE5EC",
+    "onInfo": "#D81E5B",
+    "border": "#F2E3E7",
+    "borderStrong": "#FF4D79",
+    "divider": "#F5EAEF",
+    "muted": "#8A7B80",
+    "onBrand": "#FFFFFF"
+  },
+  "typography": {
+    "displayFontFamily": "Fredoka",
+    "textFontFamily": "Nunito",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Use playful, slightly chunky spacing. Keep modules distinctly grouped. Apply 'md' or 'lg' gaps between lists and generous 'xl' padding at screen roots.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "2",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Apply to bottom tab bar when content scrolls behind it",
+      "Apply to the floating Scan Action Button container",
+      "Use on sticky headers over scrolling feeds (e.g., Weekly Plan)",
+      "Use as overlay on featured meal cards"
+    ],
+    "dont's": [
+      "Do not use on regular input fields or small list rows",
+      "Avoid on dense data sections like the raw ingredient list"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Home",
+      "purpose": "A welcoming dashboard showing today's meals, expiring ingredients, and a quick entry to the scan feature.",
+      "states": {
+        "loading": "Centered bouncing mascot or playful loading indicator.",
+        "empty": "Illustration of an empty plate, 'Scan your fridge to get cooking!' with a large primary CTA.",
+        "error": "Oops illustration, 'Could not load your plan', retry button."
+      },
+      "layout": "Sticky glass header with User greeting and Family Mode toggle. Hero Card full-width (Today's Dinner) using a real food image + gradient scrim. Below it, a horizontally scrolling 'Expiring Soon' shelf. Floating Action Button (FAB) at bottom-center (pill-shaped, 'Scan Food', raised with shadow) resting above the tab bar."
+    },
+    {
+      "name": "Pantry",
+      "purpose": "Inventory list of all scanned ingredients, highlighted by what needs to be eaten first.",
+      "states": {
+        "loading": "Skeleton list rows.",
+        "empty": "Illustration of an empty fridge. 'Your pantry is bare. Let's add some groceries!'",
+        "error": "Error fetching inventory, retry button."
+      },
+      "layout": "Top search bar. Sticky scrollable horizontal category tabs (Produce, Dairy, etc.). Vertical list of chunky cards. Each item has an icon inside a brandTertiary square, name, and an expiry tag (yellow/red/green). Swipe-to-delete gesture."
+    },
+    {
+      "name": "MealPlan",
+      "purpose": "A scrollable 7-day view of generated recipes tailored to the household's inventory and diet.",
+      "states": {
+        "loading": "Skeleton cards with soft pulsing animation.",
+        "empty": "Calendar illustration. 'No meals planned yet. Let AI build your week!'",
+        "error": "Connection issue illustration, retry button."
+      },
+      "layout": "Sticky top horizontal calendar strip for day selection. Vertical stack of Meal Cards (Breakfast, Lunch, Dinner). Cards are large with an image cover, title, time, and a 'X items from pantry' badge. Sticky CTA at the bottom to 'Regenerate Plan'."
+    },
+    {
+      "name": "ScanReview",
+      "purpose": "Review and edit the AI-extracted list of ingredients from the user's photo.",
+      "states": {
+        "loading": "AI scanning animation (sparkles over the image thumbnail).",
+        "empty": "N/A - transition state.",
+        "error": "'We couldn't read that photo clearly', Retry camera button."
+      },
+      "layout": "Split layout. Top 30% is the captured photo thumbnail. Bottom 70% is a bottom sheet containing extracted ingredients as toggleable chips (can be tapped to edit/remove). Sticky 'Add X items to Pantry' primary button at the bottom."
+    },
+    {
+      "name": "ShoppingList",
+      "purpose": "Checkable list of missing ingredients grouped by supermarket aisle.",
+      "states": {
+        "loading": "Skeleton text rows.",
+        "empty": "Shopping cart illustration. 'You have everything you need for the week!'",
+        "error": "Error loading list, retry button."
+      },
+      "layout": "Progress bar at the top (e.g., 2/10 items checked). Large, touchable list items grouped by aisle (Produce, Meat). Checking an item plays a satisfying haptic pop, strikes through the text (muted color), and drops it to a 'Completed' section at the bottom."
+    }
+  ],
+  "images": {
+    "hero_dinner": {
+      "url": "https://images.unsplash.com/photo-1535473895227-bdecb20fb157?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1Mjh8MHwxfHNlYXJjaHw0fHxoZWFsdGh5JTIwZmFtaWx5JTIwZGlubmVyJTIwc3ByZWFkfGVufDB8fHx8MTc5NDQ5NTIwNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Flat-lay photography of assorted-variety of stir fried and vegetable foods"
+    },
+    "fridge_inventory": {
+      "url": "https://images.unsplash.com/photo-1740511535135-95ffa3067486",
+      "alt": "A group of red peppers sitting on top of a counter"
+    },
+    "shopping_aisle": {
+      "url": "https://images.unsplash.com/photo-1542838132-92c53300491e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjV8MHwxfHNlYXJjaHwxfHxzdXBlcm1hcmtldCUyMGZyZXNoJTIwcHJvZHVjZSUyMGFpc2xlc3xlbnwwfHx8fDE3ODk5Nzk1MTF8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Supermarket fresh produce aisles"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Follow the 'Tactile / Playful LIGHT' personality rigidly. Use chunky, rounded shapes (radius lg/pill), clear foreground/background separation, and overshoot bounce animations.",
+    "Implement the Pink (#FF4D79) and Yellow (#FFC857) theme exactly as defined. Never introduce generic blues, purples, or default iOS indigo.",
+    "Typography: Use Fredoka for display titles and headers (max weight 500) and Nunito for all body text/labels.",
+    "Use a vertical gradient scrim (transparent to surfaceInverse at 70%+) on the 'Today's Dinner' hero card so the white text reads clearly over the busy food photo.",
+    "The FAB (Floating Action Button) for the Scan feature must be prominently centered above the tab bar, visually distinct (pill-shaped, brandPrimary color, shadow tier 2) with an inner icon and label 'Scan'.",
+    "List items (Pantry, Shopping List) must be large and tappable (min 56pt height). Integrate subtle haptic feedback (Impact/Light) when checking off shopping list items.",
+    "Keep empty states visually rich with oversized Phosphor icons or illustrations + one line of friendly text + a primary CTA.",
+    "For the 'MealPlan' screen, ensure the bottom CTA ('Regenerate Plan') is sticky, floating above the scrolling content with safe-area padding."
+  ]
+}
